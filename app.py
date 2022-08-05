@@ -20,41 +20,13 @@ st.set_page_config(
 
 norm_layer = nn.InstanceNorm2d
 
-# def crop_center(image):
-#   """Returns a cropped square image."""
-#   shape = image.shape
-#   new_shape = min(shape[1], shape[2])
-#   offset_y = max(shape[1] - shape[2], 0) // 2
-#   offset_x = max(shape[2] - shape[1], 0) // 2
-#   image = tf.image.crop_to_bounding_box(
-#       image, offset_y, offset_x, new_shape, new_shape)
-#   return image
 
-#
-def load_image(image, image_size=(256, 256), preserve_aspect_ratio=True):
-    # Load and convert to float32 numpy array, add batch dimension, and normalize to range [0, 1].
-    img = plt.imread(image).astype(np.float32)[np.newaxis, ...]
-    if img.max() > 1.0:
-        img = img / 255.
-    # if len(img.shape) == 3:
-    #     img = tf.stack([img, img, img], axis=-1)
-    # img = crop_center(img)
-    # img = tf.image.resize(img, image_size, preserve_aspect_ratio=True)
-    return img
-
-
-def write_image(dg, arr):
-    arr = np.uint8(np.clip(arr / 255.0, 0, 1) * 255)
-    dg.image(arr, use_column_width=True)
-    return dg
-
-
-def get_image_download_link(img):
-    buffered = BytesIO()
-    img.save(buffered, format="JPEG")
-    img_str = base64.b64encode(buffered.getvalue()).decode()
-    href = f'<a href="data:image/jpg;base64,{img_str}" target="_blank">Download result</a>'
-    return href
+# def get_image_download_link(img):
+#     buffered = BytesIO()
+#     img.save(buffered, format="JPEG")
+#     img_str = base64.b64encode(buffered.getvalue()).decode()
+#     href = f'<a href="data:image/jpg;base64,{img_str}" target="_blank">Download result</a>'
+#     return href
 
 
 def pil_to_bytes(model_output):
@@ -156,15 +128,12 @@ def predict(input_img, ver):
     transform = transforms.Compose([transforms.Resize(512, Image.BICUBIC), transforms.ToTensor()])
     input_img = transform(input_img)
     input_img = torch.unsqueeze(input_img, 0)
-
     drawing = 0
     with torch.no_grad():
         if ver == 'style 2':
             drawing = model2(input_img)[0].detach()
         else:
             drawing = model1(input_img)[0].detach()
-
-    drawing = transforms.ToPILImage()(drawing)
     return drawing
 
 
@@ -193,8 +162,8 @@ if st.sidebar.button(label="Generate"):
 
     if content_image_buffer and style:
         with st.spinner('Generating Stylized image ...'):
-
             stylized_image = predict(content_image, style)
+            stylized_image = transforms.ToPILImage()(stylized_image)
             col2.header("output Image")
             col2.image(np.array(stylized_image))
             st.download_button(label="Download result", data=pil_to_bytes(stylized_image),
